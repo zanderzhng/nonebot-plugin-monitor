@@ -14,22 +14,31 @@ list_subscriptions_cmd = on_command("订阅列表", priority=5)
 @subscribe_cmd.handle()
 async def handle_subscribe(bot: Bot, event: Event, uninfo: Uninfo):
     """处理订阅命令"""
-    args = str(event.get_message()).strip()
+    # Extract site name from command arguments (remove command itself)
+    message = str(event.get_message()).strip()
+    if message.startswith("/订阅 "):
+        args = message[4:].strip()  # Remove "/订阅 " prefix (including space)
+    elif message == "/订阅":
+        args = ""
+    else:
+        args = message
 
     if not args:
         await subscribe_cmd.finish("请指定要订阅的网站名称")
         return
 
     # 获取用户/群组ID
+    is_group = False
     if hasattr(event, "group_id") and event.group_id:
         target_id = str(event.group_id)
+        is_group = True
         target_type = "群组"
     else:
         target_id = str(event.get_user_id())
         target_type = "用户"
 
     # 订阅站点
-    success = subscription_manager.subscribe(target_id, args)
+    success = subscription_manager.subscribe(target_id, args, is_group)
 
     if success:
         await subscribe_cmd.finish(f"{target_type} {target_id} 已订阅 {args}")
@@ -40,22 +49,31 @@ async def handle_subscribe(bot: Bot, event: Event, uninfo: Uninfo):
 @unsubscribe_cmd.handle()
 async def handle_unsubscribe(bot: Bot, event: Event, uninfo: Uninfo):
     """处理取消订阅命令"""
-    args = str(event.get_message()).strip()
+    # Extract site name from command arguments (remove command itself)
+    message = str(event.get_message()).strip()
+    if message.startswith("/取消订阅 "):
+        args = message[6:].strip()  # Remove "/取消订阅 " prefix (including space)
+    elif message == "/取消订阅":
+        args = ""
+    else:
+        args = message
 
     if not args:
         await unsubscribe_cmd.finish("请指定要取消订阅的网站名称")
         return
 
     # 获取用户/群组ID
+    is_group = False
     if hasattr(event, "group_id") and event.group_id:
         target_id = str(event.group_id)
+        is_group = True
         target_type = "群组"
     else:
         target_id = str(event.get_user_id())
         target_type = "用户"
 
     # 取消订阅站点
-    success = subscription_manager.unsubscribe(target_id, args)
+    success = subscription_manager.unsubscribe(target_id, args, is_group)
 
     if success:
         await unsubscribe_cmd.finish(f"{target_type} {target_id} 已取消订阅 {args}")
@@ -67,13 +85,15 @@ async def handle_unsubscribe(bot: Bot, event: Event, uninfo: Uninfo):
 async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
     """处理列出订阅命令"""
     # 获取用户/群组ID
+    is_group = False
     if hasattr(event, "group_id") and event.group_id:
         target_id = str(event.group_id)
+        is_group = True
     else:
         target_id = str(event.get_user_id())
 
     # 获取用户的订阅
-    user_subscriptions = subscription_manager.get_subscriptions(target_id)
+    user_subscriptions = subscription_manager.get_subscriptions(target_id, is_group)
 
     # 获取所有可用的站点
     available_sites = list(scheduler_instance.site_modules.keys())

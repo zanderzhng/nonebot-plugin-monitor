@@ -3,6 +3,7 @@ from nonebot.plugin import PluginMetadata
 
 from .scheduler import scheduler_instance
 from .manager import subscription_manager
+from . import handler  # Import handler to register command handlers
 
 __plugin_meta__ = PluginMetadata(
     name="网站订阅插件",

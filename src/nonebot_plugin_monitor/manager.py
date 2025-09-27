@@ -11,7 +11,8 @@ class SubscriptionManager:
     def __init__(self):
         """Initialize subscription manager"""
         self.data_file = plugin_config.subscriptions_data_file
-        self.subscriptions: dict[str, list[str]] = {}  # {user/group id: [site names]}
+        # New structure: {site_name: {"users": [user_ids], "groups": [group_ids]}}
+        self.subscriptions: dict[str, dict[str, list[str]]] = {}
 
     async def initialize(self):
         """Initialize subscription manager"""
@@ -24,7 +25,10 @@ class SubscriptionManager:
             if self.data_file.exists():
                 with open(self.data_file, encoding="utf-8") as f:
                     self.subscriptions = json.load(f)
-                logger.info(f"已加载 {len(self.subscriptions)} 个订阅")
+                # Count total subscriptions for logging
+                total_subs = sum(len(site_data.get("users", [])) + len(site_data.get("groups", []))
+                               for site_data in self.subscriptions.values())
+                logger.info(f"已加载 {len(self.subscriptions)} 个站点，共 {total_subs} 个订阅")
             else:
                 self.subscriptions = {}
                 self.save_subscriptions()
@@ -45,67 +49,90 @@ class SubscriptionManager:
         except Exception as e:
             logger.error(f"保存订阅数据失败: {e}")
 
-    def subscribe(self, user_id: str, site_name: str) -> bool:
+    def subscribe(self, user_id: str, site_name: str, is_group: bool = False) -> bool:
         """
         Subscribe user/group to a site
         Args:
             user_id: User or group ID
             site_name: Site name to subscribe to
+            is_group: Whether the ID is a group ID (True) or user ID (False)
         Returns:
             True if successful, False otherwise
         """
         try:
-            if user_id not in self.subscriptions:
-                self.subscriptions[user_id] = []
+            # Initialize site in subscriptions if it doesn't exist
+            if site_name not in self.subscriptions:
+                self.subscriptions[site_name] = {"users": [], "groups": []}
 
-            if site_name not in self.subscriptions[user_id]:
-                self.subscriptions[user_id].append(site_name)
-                self.save_subscriptions()
-                logger.info(f"用户/群组 {user_id} 订阅了 {site_name}")
-                return True
-            else:
-                logger.info(f"用户/群组 {user_id} 已经订阅了 {site_name}")
+            # Determine target list based on whether it's a group or user
+            target_list = "groups" if is_group else "users"
+
+            # Check if already subscribed
+            if user_id in self.subscriptions[site_name][target_list]:
+                target_type = "群组" if is_group else "用户"
+                logger.info(f"{target_type} {user_id} 已经订阅了 {site_name}")
                 return False
+
+            # Add subscription
+            self.subscriptions[site_name][target_list].append(user_id)
+            self.save_subscriptions()
+            target_type = "群组" if is_group else "用户"
+            logger.info(f"{target_type} {user_id} 订阅了 {site_name}")
+            return True
         except Exception as e:
             logger.error(f"订阅失败: {e}")
             return False
 
-    def unsubscribe(self, user_id: str, site_name: str) -> bool:
+    def unsubscribe(self, user_id: str, site_name: str, is_group: bool = False) -> bool:
         """
         Unsubscribe user/group from a site
         Args:
             user_id: User or group ID
             site_name: Site name to unsubscribe from
+            is_group: Whether the ID is a group ID (True) or user ID (False)
         Returns:
             True if successful, False otherwise
         """
         try:
-            if user_id in self.subscriptions and site_name in self.subscriptions[user_id]:
-                self.subscriptions[user_id].remove(site_name)
+            # Check if site exists and user/group is subscribed
+            if site_name in self.subscriptions:
+                target_list = "groups" if is_group else "users"
+                if user_id in self.subscriptions[site_name][target_list]:
+                    self.subscriptions[site_name][target_list].remove(user_id)
 
-                # Clean up empty subscriptions
-                if not self.subscriptions[user_id]:
-                    del self.subscriptions[user_id]
+                    # Clean up empty site entries
+                    if not self.subscriptions[site_name]["users"] and not self.subscriptions[site_name]["groups"]:
+                        del self.subscriptions[site_name]
 
-                self.save_subscriptions()
-                logger.info(f"用户/群组 {user_id} 取消订阅了 {site_name}")
-                return True
-            else:
-                logger.info(f"用户/群组 {user_id} 未订阅 {site_name}")
-                return False
+                    self.save_subscriptions()
+                    target_type = "群组" if is_group else "用户"
+                    logger.info(f"{target_type} {user_id} 取消订阅了 {site_name}")
+                    return True
+
+            target_type = "群组" if is_group else "用户"
+            logger.info(f"{target_type} {user_id} 未订阅 {site_name}")
+            return False
         except Exception as e:
             logger.error(f"取消订阅失败: {e}")
             return False
 
-    def get_subscriptions(self, user_id: str) -> list[str]:
+    def get_subscriptions(self, user_id: str, is_group: bool = False) -> list[str]:
         """
         Get user/group subscriptions
         Args:
             user_id: User or group ID
+            is_group: Whether the ID is a group ID (True) or user ID (False)
         Returns:
             List of subscribed site names
         """
-        return self.subscriptions.get(user_id, [])
+        subscriptions = []
+        target_list = "groups" if is_group else "users"
+
+        for site_name, site_data in self.subscriptions.items():
+            if user_id in site_data.get(target_list, []):
+                subscriptions.append(site_name)
+
+        return subscriptions
 
     def get_subscribers(self, site_name: str) -> list[str]:
         """
@@ -115,17 +142,25 @@ class SubscriptionManager:
         Returns:
             List of user/group IDs subscribed to the site
         """
+        if site_name not in self.subscriptions:
+            return []
+
+        site_data = self.subscriptions[site_name]
         subscribers = []
-        for user_id, sites in self.subscriptions.items():
-            if site_name in sites:
-                subscribers.append(user_id)
+
+        # Add all users
+        subscribers.extend(site_data.get("users", []))
+
+        # Add all groups
+        subscribers.extend(site_data.get("groups", []))
+
         return subscribers
 
-    def get_all_subscriptions(self) -> dict[str, list[str]]:
+    def get_all_subscriptions(self) -> dict[str, dict[str, list[str]]]:
         """
         Get all subscriptions
         Returns:
-            Dictionary of all subscriptions
+            Dictionary of all subscriptions with site as first level keys
         """
         return self.subscriptions
 

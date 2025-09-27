@@ -16,7 +16,6 @@ class ExampleSite(BaseSite):
         """Initialize the example site"""
         super().__init__()
         self.last_check = None
-        self.update_count = 0
 
     async def fetch_latest(self) -> Any:
         """
@@ -24,16 +23,20 @@ class ExampleSite(BaseSite):
         Returns:
             Latest data from the source
         """
-        # Simulate fetching data every 10 seconds
+        # Load current update count from cache
+        cached_data = self.load_cache()
+        current_count = cached_data.get("update_count", 0) if cached_data else 0
+
+        # Simulate fetching data - always increment for testing
         self.last_check = time.time()
-        self.update_count += 1
+        new_count = current_count + 1
 
         # Return simulated data
         return {
             "timestamp": self.last_check,
-            "update_count": self.update_count,
-            "title": f"Example Update #{self.update_count}",
-            "content": f"This is example content for update #{self.update_count}",
+            "update_count": new_count,
+            "title": f"Example Update #{new_count}",
+            "content": f"This is example content for update #{new_count}",
         }
 
     def has_updates(self, cached_data: Any, latest_data: Any) -> bool:
