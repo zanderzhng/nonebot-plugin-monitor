@@ -1,43 +1,76 @@
-from nonebot import logger, require
-from nonebot.plugin import PluginMetadata, inherit_supported_adapters
+from nonebot import get_driver, logger
+from nonebot.plugin import PluginMetadata
 
-require("nonebot_plugin_uninfo")
-require("nonebot_plugin_alconna")
-require("nonebot_plugin_localstore")
-require("nonebot_plugin_apscheduler")
-from .config import Config
+from .scheduler import scheduler_instance
+from .manager import subscription_manager
 
 __plugin_meta__ = PluginMetadata(
-    name="名称",
-    description="描述",
-    usage="用法",
-    type="application",  # library
-    homepage="https://github.com/zanderzhng/nonebot-plugin-monitor",
-    config=Config,
-    supported_adapters=inherit_supported_adapters("nonebot_plugin_alconna", "nonebot_plugin_uninfo"),
-    # supported_adapters={"~onebot.v11"}, # 仅 onebot
-    extra={"author": "zanderzhng <your@mail.com>"},
+    name="网站订阅插件",
+    description="订阅不同网站的更新并推送给用户",
+    usage="""
+    订阅命令：
+    - /订阅列表: 查看可订阅的网站列表
+    - /订阅 <网站名>: 订阅指定网站
+    - /取消订阅 <网站名>: 取消订阅指定网站
+    """,
+    type="application",
+    homepage="https://github.com/your-username/nonebot-plugin-subscription",
+    supported_adapters=None,
 )
 
-from arclet.alconna import Alconna, Args, Arparma, Option, Subcommand
-from nonebot_plugin_alconna import on_alconna
-from nonebot_plugin_alconna.uniseg import UniMessage
+# 获取驱动以访问全局配置
+driver = get_driver()
 
-pip = on_alconna(
-    Alconna(
-        "pip",
-        Subcommand(
-            "install",
-            Args["package", str],
-            Option("-r|--requirement", Args["file", str]),
-            Option("-i|--index-url", Args["url", str]),
-        ),
-    )
-)
+# 插件初始化状态标志
+initialization_completed = False
 
 
-@pip.handle()
-async def _(result: Arparma):
-    package: str = result.other_args["package"]
-    logger.info(f"installing {package}")
-    await UniMessage.text(package).send()
+@driver.on_startup
+async def plugin_init():
+    """
+    插件初始化函数
+    执行必要的初始化检查和配置
+    """
+    global initialization_completed
+    if initialization_completed:
+        return
+
+    logger.info("网站订阅插件正在初始化...")
+
+    # 初始化订阅管理器
+    try:
+        await subscription_manager.initialize()
+        logger.success("订阅管理器初始化完成")
+    except Exception as e:
+        logger.error(f"订阅管理器初始化失败: {e}")
+
+    # 加载网站订阅模块
+    try:
+        loaded_sites = scheduler_instance.load_site_modules()
+        logger.success(f"网站订阅模块加载完成，共加载 {len(loaded_sites)} 个站点")
+    except Exception as e:
+        logger.error(f"网站订阅模块加载失败: {e}")
+
+    initialization_completed = True
+    logger.success("网站订阅插件初始化完成")
+
+
+@driver.on_shutdown
+async def plugin_shutdown():
+    """
+    插件关闭函数
+    执行必要的清理工作
+    """
+    logger.info("网站订阅插件正在关闭...")
+    logger.info("网站订阅插件已关闭")
+
+
+# Bot连接和断开连接的处理
+@driver.on_bot_connect
+async def handle_connect(bot):
+    logger.success(f"Bot {bot.self_id} 已连接")
+
+
+@driver.on_bot_disconnect
+async def handle_disconnect(bot):
+    logger.warning(f"Bot {bot.self_id} 已断开连接")
