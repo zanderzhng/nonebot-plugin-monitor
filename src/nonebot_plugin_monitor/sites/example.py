@@ -84,6 +84,15 @@ def example_schedule() -> str:
     return "interval:10"
 
 
+def example_display_name() -> str:
+    """
+    Get site display name for user commands
+    Returns:
+        Site display name
+    """
+    return "示例网站"
+
+
 # Register the site using the functional configuration
 site = SiteConfig(
     name="example",
@@ -92,4 +101,5 @@ site = SiteConfig(
     format_func=format_example_notification,
     description_func=example_description,
     schedule_func=example_schedule,
+    display_name_func=example_display_name,
 )

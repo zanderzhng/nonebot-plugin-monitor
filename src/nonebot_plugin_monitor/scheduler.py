@@ -17,6 +17,7 @@ class Scheduler:
         - 管理网站订阅检查任务
         """
         self.site_configs: dict[str, SiteConfig] = {}  # {site_name: site_config}
+        self.display_name_to_site_name: dict[str, str] = {}  # {display_name: site_name}
 
     def load_site_modules(self):
         """Load all site subscription modules using functional approach"""
@@ -39,11 +40,15 @@ class Scheduler:
                     # Register with scheduler
                     self.site_configs[site_name] = module.site
 
+                    # Map display name to site name
+                    display_name = module.site.display_name()
+                    self.display_name_to_site_name[display_name] = site_name
+
                     # Start scheduling for this site
                     self.start_site_scheduling(site_name)
 
                     loaded_sites.append(site_name)
-                    logger.info(f"成功加载站点模块: {site_name}")
+                    logger.info(f"成功加载站点模块: {site_name} (显示名称: {display_name})")
                 else:
                     logger.warning(f"站点模块 {site_name} 中未找到有效的 SiteConfig")
 
@@ -181,6 +186,11 @@ class Scheduler:
                     logger.error(f"向订阅者 {subscriber_id} 发送通知失败: {e}")
         except Exception as e:
             logger.error(f"发送通知时出错: {e}")
+
+
+    def get_site_name_by_display_name(self, display_name: str) -> str:
+        """Get internal site name by display name"""
+        return self.display_name_to_site_name.get(display_name, display_name)
 
 
 # 创建 Scheduler 实例

@@ -37,8 +37,11 @@ async def handle_subscribe(bot: Bot, event: Event, uninfo: Uninfo):
         target_id = str(event.get_user_id())
         target_type = "用户"
 
+    # Convert display name to internal site name
+    site_name = scheduler_instance.get_site_name_by_display_name(args)
+
     # 订阅站点
-    success = subscription_manager.subscribe(target_id, args, is_group)
+    success = subscription_manager.subscribe(target_id, site_name, is_group)
 
     if success:
         await subscribe_cmd.finish(f"{target_type} {target_id} 已订阅 {args}")
@@ -72,8 +75,11 @@ async def handle_unsubscribe(bot: Bot, event: Event, uninfo: Uninfo):
         target_id = str(event.get_user_id())
         target_type = "用户"
 
+    # Convert display name to internal site name
+    site_name = scheduler_instance.get_site_name_by_display_name(args)
+
     # 取消订阅站点
-    success = subscription_manager.unsubscribe(target_id, args, is_group)
+    success = subscription_manager.unsubscribe(target_id, site_name, is_group)
 
     if success:
         await unsubscribe_cmd.finish(f"{target_type} {target_id} 已取消订阅 {args}")
@@ -109,8 +115,9 @@ async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
             message += "已订阅:\n"
             for site in user_subscriptions:
                 if site in scheduler_instance.site_configs:
+                    display_name = scheduler_instance.site_configs[site].display_name()
                     description = scheduler_instance.site_configs[site].description()
-                    message += f"✓ {site} - {description}\n"
+                    message += f"✓ {display_name} - {description}\n"
                 else:
                     message += f"✓ {site} - (描述不可用)\n"
             message += "\n"
@@ -121,8 +128,9 @@ async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
             message += "未订阅:\n"
             for site in unsubscribed_sites:
                 if site in scheduler_instance.site_configs:
+                    display_name = scheduler_instance.site_configs[site].display_name()
                     description = scheduler_instance.site_configs[site].description()
-                    message += f"○ {site} - {description}\n"
+                    message += f"○ {display_name} - {description}\n"
                 else:
                     message += f"○ {site} - (描述不可用)\n"
 

@@ -9,6 +9,7 @@ CompareFunc = Callable[[Any, Any], bool]
 FormatFunc = Callable[[Any], str]
 ScheduleFunc = Callable[[], str]
 DescriptionFunc = Callable[[], str]
+DisplayNameFunc = Callable[[], str]
 
 
 class SiteConfig:
@@ -22,6 +23,7 @@ class SiteConfig:
         format_func: FormatFunc,
         description_func: DescriptionFunc,
         schedule_func: ScheduleFunc,
+        display_name_func: DisplayNameFunc = None,
     ):
         self.name = name
         self.fetch = fetch_func
@@ -29,3 +31,4 @@ class SiteConfig:
         self.format = format_func
         self.description = description_func
         self.schedule = schedule_func
+        self.display_name = display_name_func or description_func
