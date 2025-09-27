@@ -2,8 +2,8 @@ from nonebot import on_command
 from nonebot.adapters import Bot, Event
 from nonebot_plugin_uninfo import Uninfo
 
-from .scheduler import scheduler_instance
 from .manager import subscription_manager
+from .scheduler import scheduler_instance
 
 # 订阅相关命令处理器
 subscribe_cmd = on_command("订阅", priority=5)
@@ -96,7 +96,7 @@ async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
     user_subscriptions = subscription_manager.get_subscriptions(target_id, is_group)
 
     # 获取所有可用的站点
-    available_sites = list(scheduler_instance.site_modules.keys())
+    available_sites = list(scheduler_instance.site_configs.keys())
 
     # 创建消息
     if not available_sites:
@@ -108,8 +108,8 @@ async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
         if user_subscriptions:
             message += "已订阅:\n"
             for site in user_subscriptions:
-                if site in scheduler_instance.site_modules:
-                    description = scheduler_instance.site_modules[site].get_description()
+                if site in scheduler_instance.site_configs:
+                    description = scheduler_instance.site_configs[site].description()
                     message += f"✓ {site} - {description}\n"
                 else:
                     message += f"✓ {site} - (描述不可用)\n"
@@ -120,8 +120,8 @@ async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
         if unsubscribed_sites:
             message += "未订阅:\n"
             for site in unsubscribed_sites:
-                if site in scheduler_instance.site_modules:
-                    description = scheduler_instance.site_modules[site].get_description()
+                if site in scheduler_instance.site_configs:
+                    description = scheduler_instance.site_configs[site].description()
                     message += f"○ {site} - {description}\n"
                 else:
                     message += f"○ {site} - (描述不可用)\n"
