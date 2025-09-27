@@ -1,9 +1,9 @@
 from nonebot import get_driver, logger
 from nonebot.plugin import PluginMetadata
 
-from .scheduler import scheduler_instance
+from . import handler as handler  # Import handler to register command handlers
 from .manager import subscription_manager
-from . import handler  # Import handler to register command handlers
+from .scheduler import scheduler_instance
 
 __plugin_meta__ = PluginMetadata(
     name="网站订阅插件",
@@ -15,16 +15,12 @@ __plugin_meta__ = PluginMetadata(
     - /取消订阅 <网站名>: 取消订阅指定网站
     """,
     type="application",
-    homepage="https://github.com/your-username/nonebot-plugin-subscription",
+    homepage="https://github.com/zanderzhng/nonebot-plugin-monitor",
     supported_adapters=None,
 )
 
 # 获取驱动以访问全局配置
 driver = get_driver()
-
-# 插件初始化状态标志
-initialization_completed = False
-
 
 @driver.on_startup
 async def plugin_init():
@@ -32,9 +28,6 @@ async def plugin_init():
     插件初始化函数
     执行必要的初始化检查和配置
     """
-    global initialization_completed
-    if initialization_completed:
-        return
 
     logger.info("网站订阅插件正在初始化...")
 
@@ -52,7 +45,6 @@ async def plugin_init():
     except Exception as e:
         logger.error(f"网站订阅模块加载失败: {e}")
 
-    initialization_completed = True
     logger.success("网站订阅插件初始化完成")
 
 

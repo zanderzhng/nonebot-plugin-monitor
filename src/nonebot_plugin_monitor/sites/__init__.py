@@ -1,68 +1,31 @@
-from abc import ABC, abstractmethod
+"""Functional approach to site modules - minimal fetch/compare/format functions"""
+
+from collections.abc import Callable
 from typing import Any
 
-
-class BaseSite(ABC):
-    """Base class for all site modules"""
-
-    @abstractmethod
-    async def fetch_latest(self) -> Any:
-        """
-        Fetch latest content from the source
-        Returns:
-            Latest data from the source
-        """
-        pass
-
-    @abstractmethod
-    def has_updates(self, cached_data: Any, latest_data: Any) -> bool:
-        """
-        Compare cached data with latest data to determine if there are updates
-        Args:
-            cached_data: Previously cached data
-            latest_data: Latest data fetched from source
-        Returns:
-            True if there are updates, False otherwise
-        """
-        pass
-
-    @abstractmethod
-    def format_notification(self, latest_data: Any) -> str:
-        """
-        Format the latest data into a notification message
-        Args:
-            latest_data: Latest data to format
-        Returns:
-            Formatted notification message
-        """
-        pass
-
-    @abstractmethod
-    def get_description(self) -> str:
-        """
-        Get site description for user display
-        Returns:
-            Site description
-        """
-        pass
-
-    @abstractmethod
-    def get_schedule(self) -> str:
-        """
-        Get the site's custom fetch schedule (cron format)
-        Returns:
-            Cron schedule string (e.g., "*/30 * * * *" for every 30 minutes)
-        """
-        pass
-
-    def get_name(self) -> str:
-        """
-        Get site name (default implementation)
-        Returns:
-            Site module name
-        """
-        return self.__class__.__module__.split(".")[-1]
+# Define function types
+FetchFunc = Callable[[], Any]
+CompareFunc = Callable[[Any, Any], bool]
+FormatFunc = Callable[[Any], str]
+ScheduleFunc = Callable[[], str]
+DescriptionFunc = Callable[[], str]
 
 
-# Site interface definition
-Site = BaseSite
+class SiteConfig:
+    """Configuration for a site module with functional components"""
+
+    def __init__(
+        self,
+        name: str,
+        fetch_func: FetchFunc,
+        compare_func: CompareFunc,
+        format_func: FormatFunc,
+        description_func: DescriptionFunc,
+        schedule_func: ScheduleFunc,
+    ):
+        self.name = name
+        self.fetch = fetch_func
+        self.compare = compare_func
+        self.format = format_func
+        self.description = description_func
+        self.schedule = schedule_func
