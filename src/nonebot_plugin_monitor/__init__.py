@@ -22,6 +22,7 @@ __plugin_meta__ = PluginMetadata(
 # 获取驱动以访问全局配置
 driver = get_driver()
 
+
 @driver.on_startup
 async def plugin_init():
     """

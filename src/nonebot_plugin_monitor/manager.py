@@ -26,8 +26,10 @@ class SubscriptionManager:
                 with open(self.data_file, encoding="utf-8") as f:
                     self.subscriptions = json.load(f)
                 # Count total subscriptions for logging
-                total_subs = sum(len(site_data.get("users", [])) + len(site_data.get("groups", []))
-                               for site_data in self.subscriptions.values())
+                total_subs = sum(
+                    len(site_data.get("users", [])) + len(site_data.get("groups", []))
+                    for site_data in self.subscriptions.values()
+                )
                 logger.info(f"已加载 {len(self.subscriptions)} 个站点，共 {total_subs} 个订阅")
             else:
                 self.subscriptions = {}

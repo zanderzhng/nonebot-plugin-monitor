@@ -30,6 +30,7 @@ def load_cache(site_name: str) -> Any:
     except Exception as e:
         # Log the error but don't fail - return None to indicate no cache
         import nonebot
+
         logger = nonebot.logger
         logger.warning(f"Failed to load cache for site {site_name}: {e}")
     return None
@@ -54,6 +55,7 @@ def save_cache(site_name: str, data: Any) -> bool:
     except Exception as e:
         # Log the error
         import nonebot
+
         logger = nonebot.logger
         logger.error(f"Failed to save cache for site {site_name}: {e}")
         return False

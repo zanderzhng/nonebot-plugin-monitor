@@ -187,7 +187,6 @@ class Scheduler:
         except Exception as e:
             logger.error(f"发送通知时出错: {e}")
 
-
     def get_site_name_by_display_name(self, display_name: str) -> str:
         """Get internal site name by display name"""
         return self.display_name_to_site_name.get(display_name, display_name)
