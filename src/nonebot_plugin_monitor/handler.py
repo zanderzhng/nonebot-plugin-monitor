@@ -9,6 +9,8 @@ from .scheduler import scheduler_instance
 subscribe_cmd = on_command("订阅", priority=5)
 unsubscribe_cmd = on_command("取消订阅", priority=5)
 list_subscriptions_cmd = on_command("订阅列表", priority=5)
+subscribe_all_cmd = on_command("订阅全部", priority=5)
+unsubscribe_all_cmd = on_command("取消订阅全部", priority=5)
 
 
 @subscribe_cmd.handle()
@@ -114,7 +116,9 @@ async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
         if user_subscriptions:
             message += "已订阅:\n"
             for site in user_subscriptions:
-                if site in scheduler_instance.site_configs:
+                if site == "全部":
+                    message += f"✓ {site} - 接收所有站点的通知\n"
+                elif site in scheduler_instance.site_configs:
                     display_name = scheduler_instance.site_configs[site].display_name()
                     description = scheduler_instance.site_configs[site].description()
                     message += f"✓ {display_name} - {description}\n"
@@ -123,11 +127,17 @@ async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
             message += "\n"
 
         # 显示未订阅的站点
-        unsubscribed_sites = [site for site in available_sites if site not in user_subscriptions]
+        unsubscribed_sites = [site for site in available_sites if site not in user_subscriptions and site != "all"]
+        # Add "全部" to unsubscribed list if not subscribed
+        if "全部" not in user_subscriptions:
+            unsubscribed_sites.append("全部")
+
         if unsubscribed_sites:
             message += "未订阅:\n"
             for site in unsubscribed_sites:
-                if site in scheduler_instance.site_configs:
+                if site == "全部":
+                    message += f"○ {site} - 接收所有站点的通知\n"
+                elif site in scheduler_instance.site_configs:
                     display_name = scheduler_instance.site_configs[site].display_name()
                     description = scheduler_instance.site_configs[site].description()
                     message += f"○ {display_name} - {description}\n"
@@ -135,3 +145,47 @@ async def handle_list_subscriptions(bot: Bot, event: Event, uninfo: Uninfo):
                     message += f"○ {site} - (描述不可用)\n"
 
     await list_subscriptions_cmd.finish(message)
+
+
+@subscribe_all_cmd.handle()
+async def handle_subscribe_all(bot: Bot, event: Event, uninfo: Uninfo):
+    """处理订阅全部命令"""
+    # 获取用户/群组ID
+    is_group = False
+    if hasattr(event, "group_id") and event.group_id:
+        target_id = str(event.group_id)
+        is_group = True
+        target_type = "群组"
+    else:
+        target_id = str(event.get_user_id())
+        target_type = "用户"
+
+    # 订阅全部站点
+    success = subscription_manager.subscribe(target_id, "全部", is_group)
+
+    if success:
+        await subscribe_all_cmd.finish(f"{target_type} {target_id} 已订阅全部站点")
+    else:
+        await subscribe_all_cmd.finish(f"{target_type} {target_id} 订阅全部站点失败")
+
+
+@unsubscribe_all_cmd.handle()
+async def handle_unsubscribe_all(bot: Bot, event: Event, uninfo: Uninfo):
+    """处理取消订阅全部命令"""
+    # 获取用户/群组ID
+    is_group = False
+    if hasattr(event, "group_id") and event.group_id:
+        target_id = str(event.group_id)
+        is_group = True
+        target_type = "群组"
+    else:
+        target_id = str(event.get_user_id())
+        target_type = "用户"
+
+    # 取消订阅全部站点
+    success = subscription_manager.unsubscribe(target_id, "全部", is_group)
+
+    if success:
+        await unsubscribe_all_cmd.finish(f"{target_type} {target_id} 已取消订阅全部站点")
+    else:
+        await unsubscribe_all_cmd.finish(f"{target_type} {target_id} 未订阅全部站点或取消订阅失败")

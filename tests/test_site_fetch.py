@@ -2,9 +2,10 @@
 Tests for site module fetch functions
 """
 
-import pytest
 from pathlib import Path
 import sys
+
+import pytest
 
 # Add src to path so we can import site modules
 src_path = Path(__file__).parent.parent / "src"

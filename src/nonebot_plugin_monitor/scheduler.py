@@ -55,6 +55,9 @@ class Scheduler:
             except Exception as e:
                 logger.error(f"加载站点模块 {site_name} 失败: {e}")
 
+        # Add "全部" to display name mapping
+        self.display_name_to_site_name["全部"] = "all"
+
         logger.info(f"已加载 {len(loaded_sites)} 个站点模块: {', '.join(loaded_sites) if loaded_sites else '无'}")
         return loaded_sites
 
