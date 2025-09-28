@@ -22,17 +22,13 @@ def test_subscription_structure():
 
 def test_subscription_manager_exists():
     """Test that subscription manager module exists"""
-    subscription_manager_path = (
-        Path(__file__).parent.parent / "src" / "nonebot_plugin_monitor" / "manager.py"
-    )
+    subscription_manager_path = Path(__file__).parent.parent / "src" / "nonebot_plugin_monitor" / "manager.py"
     assert subscription_manager_path.exists(), "Subscription manager module should exist"
 
 
 def test_subscription_handlers_exist():
     """Test that subscription handlers module exists"""
-    subscription_handlers_path = (
-        Path(__file__).parent.parent / "src" / "nonebot_plugin_monitor" / "handler.py"
-    )
+    subscription_handlers_path = Path(__file__).parent.parent / "src" / "nonebot_plugin_monitor" / "handler.py"
     assert subscription_handlers_path.exists(), "Subscription handlers module should exist"
 
 
